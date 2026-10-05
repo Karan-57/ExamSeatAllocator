@@ -1,0 +1,18 @@
+Actual GUI output screenshots captured by running ExamSeatGUI:
+01-dashboard.png
+02-students.png
+03-allocation-complete.png
+04-seat-map.png
+05-search-student.png
+06-detailed-result.png
+07-classroom-dashboard.png
+08-classroom-capacity-dialog.png
+09-capacity-50-dashboard.png
+10-students-before-add.png
+11-persistent-student-after-restart.png
+12-persistent-student-visible.png
+
+New screenshots demonstrate:
+- Editable classroom capacity dialog.
+- Capacity changed to 50 on the dashboard.
+- Student data still present after application restart after a new student was added.

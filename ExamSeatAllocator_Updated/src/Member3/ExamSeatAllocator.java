@@ -14,6 +14,7 @@ public class ExamSeatAllocator {
     static Classroom classroom;
     static SeatAllocator allocator = new SeatAllocator();
     static AllocationResult result;
+    static AllocationDAO allocationDAO = new AllocationDAO();
 
     public static void main(String[] args) {
 
@@ -123,6 +124,13 @@ public class ExamSeatAllocator {
 
         if (result.isSuccess()) {
             System.out.println("Seats allocated successfully!");
+
+            // Save to MySQL database
+            try {
+                allocationDAO.saveAllocation(classroom);
+            } catch (Exception e) {
+                System.err.println("Failed to save allocation to database: " + e.getMessage());
+            }
         }
     }
 

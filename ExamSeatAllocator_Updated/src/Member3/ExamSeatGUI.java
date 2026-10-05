@@ -36,6 +36,8 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
 
+import SeatAllocationAlgorithm.AllocationDAO;
+import SeatAllocationAlgorithm.AllocationRecord;
 import SeatAllocationAlgorithm.AllocationResult;
 import SeatAllocationAlgorithm.Classroom;
 import SeatAllocationAlgorithm.Seat;
@@ -76,6 +78,9 @@ private final Color RED = new Color(200, 70, 70);
             new SeatAllocator();
 
     private AllocationResult result;
+
+    private final AllocationDAO allocationDAO =
+            new AllocationDAO();
 
     // =========================================================
     // GUI
@@ -2014,9 +2019,25 @@ private final Color RED = new Color(200, 70, 70);
 
         if (result.isSuccess()) {
 
-            statusLabel.setText(
-                    "✓ Seats allocated successfully"
-            );
+            // Save generated seating to MySQL via AllocationDAO
+            try {
+                allocationDAO.saveAllocation(classroom);
+                statusLabel.setText(
+                        "✓ Seats allocated and saved to MySQL successfully"
+                );
+            } catch (Exception dbEx) {
+                System.err.println("Failed to save allocation to database: " + dbEx.getMessage());
+                statusLabel.setText(
+                        "✓ Seats allocated (MySQL save warning: " + dbEx.getMessage() + ")"
+                );
+                JOptionPane.showMessageDialog(
+                        this,
+                        "Seats were allocated successfully in memory, but could not be saved to MySQL.\nError: "
+                                + dbEx.getMessage() + "\n\nPlease check your MySQL database connection.",
+                        "Database Save Warning",
+                        JOptionPane.WARNING_MESSAGE
+                );
+            }
 
             JOptionPane.showMessageDialog(
                     this,
@@ -2564,34 +2585,57 @@ private final Color RED = new Color(200, 70, 70);
                     }
                 };
 
-        for (int row = 0;
-             row < classroom.getRows();
-             row++) {
-
-            for (int column = 0;
-                 column < classroom.getColumns();
-                 column++) {
-
-                Seat seat =
-                        classroom.getSeat(
-                                row,
-                                column
-                        );
-
-                if (!seat.isEmpty()) {
-
-                    Student student =
-                            seat.getStudent();
-
+        boolean loadedFromDatabase = false;
+        try {
+            List<AllocationRecord> dbRecords = allocationDAO.getAllAllocations();
+            if (dbRecords != null && !dbRecords.isEmpty()) {
+                for (AllocationRecord record : dbRecords) {
                     model.addRow(
                             new Object[] {
-                                    row + 1,
-                                    column + 1,
-                                    student.getRollNo(),
-                                    student.getName(),
-                                    student.getDivision()
+                                    record.getRowNo(),
+                                    record.getColumnNo(),
+                                    record.getRollNo(),
+                                    record.getStudentName(),
+                                    record.getDivision()
                             }
                     );
+                }
+                loadedFromDatabase = true;
+            }
+        } catch (Exception dbEx) {
+            System.err.println("Could not load allocations from MySQL, using in-memory data: " + dbEx.getMessage());
+        }
+
+        if (!loadedFromDatabase) {
+            for (int row = 0;
+                 row < classroom.getRows();
+                 row++) {
+
+                for (int column = 0;
+                     column < classroom.getColumns();
+                     column++) {
+
+                    Seat seat =
+                            classroom.getSeat(
+                                    row,
+                                    column
+                            );
+
+                    if (!seat.isEmpty()) {
+
+                        Student student =
+                                seat.getStudent();
+
+                        model.addRow(
+                                new Object[] {
+                                        row + 1,
+                                        column + 1,
+                                        student.getRollNo(),
+                                        student.getName(),
+                                        student.getDivision()
+                                }
+                        );
+                    }
                 }
             }
         }
